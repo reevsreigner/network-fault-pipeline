@@ -1,0 +1,40 @@
+# This is a basic CI (Continuous Integration) workflow for a Python project.
+name: Run Python Tests
+
+# Controls when the workflow will run.
+# It triggers on every push or pull request to the 'main' branch.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  # This job is named 'build'
+  build:
+    # The type of runner that the job will run on (e.g., Windows, macOS, Linux)
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Step 1: Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Sets up a Python environment on the runner
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Step 3: Installs project dependencies from requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # Step 4: Runs pytest to execute the unit tests
+      - name: Run tests with pytest
+        run: |
+          pytest
