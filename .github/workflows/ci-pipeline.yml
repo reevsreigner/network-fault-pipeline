@@ -37,4 +37,4 @@ jobs:
       # Step 4: Runs pytest to execute the unit tests
       - name: Run tests with pytest
         run: |
-          pytest
+          python -m pytest
