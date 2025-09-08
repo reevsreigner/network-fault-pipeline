@@ -1,6 +1,11 @@
 End-to-End Network Fault Prediction Pipeline
 An end-to-end data pipeline to ingest, clean, and analyze telecommunications data, and train a model to predict network faults. The project culminates in a live, interactive Streamlit dashboard.
-
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
 1. Project Overview
 1.1. Objective
 To design and implement a scalable data pipeline that ingests raw network KPI data, cleans and transforms it, stores it in a structured database, and uses it to train a machine learning model for fault prediction. The final output is an interactive dashboard for KPI monitoring and live fault prediction.
