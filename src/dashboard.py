@@ -25,7 +25,6 @@ def load_data_from_db():
     prevents hitting the database on every interaction.
     """
     conn = sqlite3.connect(DB_PATH)
-    # *** FIX IS HERE: Corrected the table name from k_metrics to kpi_metrics ***
     df = pd.read_sql("SELECT * FROM kpi_metrics", conn) 
     conn.close()
     return df
@@ -41,8 +40,8 @@ def load_model():
 df = load_data_from_db()
 
 # Perform the data type conversion *after* loading from cache
-# This is the most robust way to ensure the column is always a datetime object.
-df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
+# *** FIX IS HERE: Re-add format='mixed' to handle inconsistent timestamp formats ***
+df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='mixed', errors='coerce')
 
 # Drop any rows where the timestamp could not be converted
 df.dropna(subset=['Timestamp'], inplace=True)
