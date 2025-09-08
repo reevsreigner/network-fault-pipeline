@@ -22,9 +22,15 @@ MODEL_PATH = BASE_DIR / "models" / "fault_predictor.pkl"
 def load_data():
     """Loads KPI data from the SQLite database."""
     conn = sqlite3.connect(DB_PATH)
-    # The parse_dates parameter is already handling the conversion correctly here.
-    df = pd.read_sql("SELECT * FROM kpi_metrics", conn, parse_dates=['Timestamp'])
+    # Load data first as-is from the database
+    df = pd.read_sql("SELECT * FROM kpi_metrics", conn)
     conn.close()
+    
+    # *** FIX IS HERE: Explicitly and robustly convert the Timestamp column ***
+    # This is more reliable than using the parse_dates argument with SQLite.
+    # 'errors=coerce' will turn any problematic dates into NaT (Not a Time)
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
+    
     return df
 
 @st.cache_resource
@@ -49,7 +55,7 @@ selected_locality = st.sidebar.selectbox("Select a Locality", localities)
 st.header(f"Performance Analysis for: {selected_locality}")
 
 # Filter data based on selection
-# *** FIX IS HERE: Add .sort_values('Timestamp') to ensure chronological plotting ***
+# The sort_values call is still correct and necessary.
 locality_df = df[df['Locality'] == selected_locality].copy().sort_values('Timestamp')
 
 
@@ -102,4 +108,5 @@ if not locality_df.empty:
             st.sidebar.success(f"**Network Appears Stable.** (Fault Risk: {prediction_proba[1]:.2%})")
 else:
     st.warning(f"No data available for {selected_locality}.")
+
 
