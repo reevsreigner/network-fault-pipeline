@@ -22,6 +22,7 @@ MODEL_PATH = BASE_DIR / "models" / "fault_predictor.pkl"
 def load_data():
     """Loads KPI data from the SQLite database."""
     conn = sqlite3.connect(DB_PATH)
+    # The parse_dates parameter is already handling the conversion correctly here.
     df = pd.read_sql("SELECT * FROM kpi_metrics", conn, parse_dates=['Timestamp'])
     conn.close()
     return df
@@ -48,7 +49,9 @@ selected_locality = st.sidebar.selectbox("Select a Locality", localities)
 st.header(f"Performance Analysis for: {selected_locality}")
 
 # Filter data based on selection
-locality_df = df[df['Locality'] == selected_locality].copy()
+# *** FIX IS HERE: Add .sort_values('Timestamp') to ensure chronological plotting ***
+locality_df = df[df['Locality'] == selected_locality].copy().sort_values('Timestamp')
+
 
 # 1. KPI Trend Charts
 st.subheader("KPI Trends Over Time")
@@ -65,35 +68,38 @@ st.plotly_chart(fig_signal, use_container_width=True)
 st.sidebar.header("Live Fault Prediction")
 st.sidebar.write("Input current KPI values to predict fault risk.")
 
-# Get latest values as defaults
-latest_data = locality_df.sort_values('Timestamp', ascending=False).iloc[0]
+# Get latest values as defaults, if the dataframe is not empty
+if not locality_df.empty:
+    latest_data = locality_df.iloc[-1]
+    # User input fields in the sidebar
+    latency_input = st.sidebar.number_input(
+        "Current Latency (ms)", value=float(latest_data['Latency (ms)'])
+    )
+    throughput_input = st.sidebar.number_input(
+        "Current Data Throughput (Mbps)", value=float(latest_data['Data Throughput (Mbps)'])
+    )
+    signal_strength_input = st.sidebar.number_input(
+        "Current Signal Strength (dBm)", value=float(latest_data['Signal Strength (dBm)'])
+    )
 
-# User input fields in the sidebar
-latency_input = st.sidebar.number_input(
-    "Current Latency (ms)", value=float(latest_data['Latency (ms)'])
-)
-throughput_input = st.sidebar.number_input(
-    "Current Data Throughput (Mbps)", value=float(latest_data['Data Throughput (Mbps)'])
-)
-signal_strength_input = st.sidebar.number_input(
-    "Current Signal Strength (dBm)", value=float(latest_data['Signal Strength (dBm)'])
-)
+    # Prediction button
+    if st.sidebar.button("Predict Fault Risk"):
+        # Create a DataFrame from inputs
+        input_data = pd.DataFrame({
+            'Latency (ms)': [latency_input],
+            'Signal Strength (dBm)': [signal_strength_input],
+            'Data Throughput (Mbps)': [throughput_input]
+        })
+        
+        # Make a prediction
+        prediction = model.predict(input_data)[0]
+        prediction_proba = model.predict_proba(input_data)[0]
+        
+        # Display the result
+        if prediction == 1:
+            st.sidebar.error(f"**High Risk of Fault!** (Confidence: {prediction_proba[1]:.2%})")
+        else:
+            st.sidebar.success(f"**Network Appears Stable.** (Fault Risk: {prediction_proba[1]:.2%})")
+else:
+    st.warning(f"No data available for {selected_locality}.")
 
-# Prediction button
-if st.sidebar.button("Predict Fault Risk"):
-    # Create a DataFrame from inputs
-    input_data = pd.DataFrame({
-        'Latency (ms)': [latency_input],
-        'Signal Strength (dBm)': [signal_strength_input],
-        'Data Throughput (Mbps)': [throughput_input]
-    })
-    
-    # Make a prediction
-    prediction = model.predict(input_data)[0]
-    prediction_proba = model.predict_proba(input_data)[0]
-    
-    # Display the result
-    if prediction == 1:
-        st.sidebar.error(f"**High Risk of Fault!** (Confidence: {prediction_proba[1]:.2%})")
-    else:
-        st.sidebar.success(f"**Network Appears Stable.** (Fault Risk: {prediction_proba[1]:.2%})")
