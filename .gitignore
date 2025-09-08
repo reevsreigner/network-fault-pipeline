@@ -9,10 +9,7 @@ pycache/
 *.pyo
 *.pyd
 
-Database files
-*.db
-*.sqlite
-*.sqlite3
+
 
 IDE and OS specific
 .vscode/
