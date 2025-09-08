@@ -22,8 +22,6 @@ Optimize Maintenance: Transition from a reactive to a proactive maintenance sche
 2. System Architecture
 The pipeline follows a standard ETL (Extract, Transform, Load) architecture, moving data from a raw source to a final analytics layer.
 
-(Note: A real diagram would be embedded here)
-
 Workflow:
 
 Ingestion: Raw CSV data is validated and placed in a raw data zone.
