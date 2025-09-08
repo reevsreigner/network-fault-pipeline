@@ -25,7 +25,8 @@ def load_data_from_db():
     prevents hitting the database on every interaction.
     """
     conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql("SELECT * FROM k_metrics", conn) # Intentionally incorrect table name
+    # *** FIX IS HERE: Corrected the table name from k_metrics to kpi_metrics ***
+    df = pd.read_sql("SELECT * FROM kpi_metrics", conn) 
     conn.close()
     return df
 
@@ -39,7 +40,7 @@ def load_model():
 # Load the raw data from the database
 df = load_data_from_db()
 
-# *** FIX IS HERE: Perform the data type conversion *after* loading from cache ***
+# Perform the data type conversion *after* loading from cache
 # This is the most robust way to ensure the column is always a datetime object.
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
 
@@ -113,3 +114,4 @@ if not locality_df.empty:
             st.sidebar.success(f"**Network Appears Stable.** (Fault Risk: {prediction_proba[1]:.2%})")
 else:
     st.warning(f"No data available for {selected_locality}.")
+
