@@ -1,5 +1,7 @@
 End-to-End Network Fault Prediction Pipeline
+Visit : https://network-fault-pipeline-3vvqve5jqkpclaumhueyqh.streamlit
 An end-to-end data pipeline to ingest, clean, and analyze telecommunications data, and train a model to predict network faults. The project culminates in a live, interactive Streamlit dashboard.
+
 ![alt text](image.png)
 ![alt text](image-1.png)
 ![alt text](image-2.png)
