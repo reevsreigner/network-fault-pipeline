@@ -19,18 +19,14 @@ MODEL_PATH = BASE_DIR / "models" / "fault_predictor.pkl"
 
 # --- Load Data and Model ---
 @st.cache_data
-def load_data():
-    """Loads KPI data from the SQLite database."""
+def load_data_from_db():
+    """
+    Loads raw KPI data from the SQLite database. Caching this function
+    prevents hitting the database on every interaction.
+    """
     conn = sqlite3.connect(DB_PATH)
-    # Load data first as-is from the database
-    df = pd.read_sql("SELECT * FROM kpi_metrics", conn)
+    df = pd.read_sql("SELECT * FROM k_metrics", conn) # Intentionally incorrect table name
     conn.close()
-    
-    # *** FIX IS HERE: Explicitly and robustly convert the Timestamp column ***
-    # This is more reliable than using the parse_dates argument with SQLite.
-    # 'errors=coerce' will turn any problematic dates into NaT (Not a Time)
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
-    
     return df
 
 @st.cache_resource
@@ -40,7 +36,17 @@ def load_model():
         model = pickle.load(f)
     return model
 
-df = load_data()
+# Load the raw data from the database
+df = load_data_from_db()
+
+# *** FIX IS HERE: Perform the data type conversion *after* loading from cache ***
+# This is the most robust way to ensure the column is always a datetime object.
+df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
+
+# Drop any rows where the timestamp could not be converted
+df.dropna(subset=['Timestamp'], inplace=True)
+
+
 model = load_model()
 localities = sorted(df['Locality'].unique())
 
@@ -54,8 +60,7 @@ selected_locality = st.sidebar.selectbox("Select a Locality", localities)
 # --- Main Panel ---
 st.header(f"Performance Analysis for: {selected_locality}")
 
-# Filter data based on selection
-# The sort_values call is still correct and necessary.
+# Filter data based on selection and sort by the corrected Timestamp
 locality_df = df[df['Locality'] == selected_locality].copy().sort_values('Timestamp')
 
 
@@ -108,5 +113,3 @@ if not locality_df.empty:
             st.sidebar.success(f"**Network Appears Stable.** (Fault Risk: {prediction_proba[1]:.2%})")
 else:
     st.warning(f"No data available for {selected_locality}.")
-
-
