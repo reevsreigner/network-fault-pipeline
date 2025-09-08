@@ -1,66 +1,52 @@
 End-to-End Network Fault Prediction Pipeline
 1. Project Overview
-This project demonstrates a complete, end-to-end data engineering pipeline that ingests raw telecommunications Key Performance Indicator (KPI) data, cleans and transforms it, and ultimately uses it to train a machine learning model to predict network faults. The entire process is orchestrated, tested, and visualized through an interactive web dashboard.
+This project implements a complete, end-to-end data engineering pipeline that ingests raw telecommunications KPI data, cleans and transforms it, and ultimately uses it to train a machine learning model to predict network faults. The entire process is orchestrated, automatically tested via CI/CD, and visualized through an interactive web dashboard.
 
-The goal is to provide a realistic, portfolio-ready example of the skills required for a modern data engineering role, including ETL, data analysis, machine learning, and CI/CD.
-
-Problem Statement
-Telecommunications networks generate vast streams of performance data. Proactively identifying and predicting network faults (like poor signal or slow speeds) is crucial to ensure high Quality of Service (QoS) and prevent downtime. This project simulates this real-world challenge by building an automated pipeline to process this data and flag potential issues before they impact users.
+The goal is to provide a realistic, portfolio-ready example of the skills required for a modern data engineering role, moving beyond a simple script to a well-engineered, production-aware system.
 
 2. Key Features
 Automated ETL Pipeline: A series of orchestrated scripts handles the entire Extract, Transform, Load process from raw CSV to a clean analytics database.
 
-Data Cleaning & Feature Engineering: Implements robust data cleaning (handling nulls, normalizing categories) and creates a synthetic fault_flag target variable based on domain-specific rules.
+Pragmatic Feature Engineering: Creates a synthetic fault_flag target variable based on clear, domain-specific rules to enable supervised learning.
 
-Exploratory Data Analysis (EDA): A comprehensive Jupyter Notebook explores data distributions, correlations, and key relationships to inform modeling.
+Machine Learning Model: Trains and evaluates a Random Forest classifier, saving the model for live predictions.
 
-Machine Learning Model: Trains and evaluates both Logistic Regression and Random Forest models to classify network conditions as faulty or healthy, saving the best-performing model.
+Interactive Dashboard: A Streamlit web application visualizes KPI trends and provides a real-time fault prediction tool.
 
-Interactive Dashboard: A Streamlit web application visualizes KPI trends for different locations and provides a live prediction tool powered by the trained model.
+Automated Testing & CI/CD: Includes unit tests with pytest and a GitHub Actions workflow to automatically validate code on every push, ensuring reliability.
 
-Automated Testing & CI/CD: The project includes unit tests with pytest and a GitHub Actions workflow to automatically run these tests on every push, ensuring code quality and reliability.
+Orchestration: Uses a simple Bash script for local orchestration, serving as a blueprint for migration to a production scheduler like Airflow.
 
-Containerization Blueprint: A Dockerfile is included to package the entire application, making it portable and ready for deployment with container orchestration tools.
+Containerization: A Dockerfile is included to package the entire pipeline, making it portable and ready for deployment.
 
-3. High-Level Architecture
-The pipeline follows a logical, multi-stage data flow:
-
-[Raw CSV Source] -> [1. Ingest] -> [Raw Zone] -> [2. Transform] -> [Curated Zone (Parquet)] -> [3. Load] -> [Analytics DB (SQLite)]
-                                                                                                                |
-                                                                                                                V
-                                                                                                    [4. Train Model] -> [Saved Model (.pkl)]
-                                                                                                                |
-                                                                                                                V
-                                                                                                    [5. Dashboard] <-> [User Interaction]
-
-4. Technology Stack
+3. Technology Stack
 Language: Python 3.12
 
-Data Manipulation & Analysis: Pandas, NumPy
+Data Manipulation & Analysis: Pandas, NumPy, Scikit-learn
 
-Machine Learning: Scikit-learn
-
-Database: SQLite
+Database: SQLite (for development portability)
 
 Dashboard: Streamlit, Plotly
 
 Testing: Pytest
 
-Orchestration: Bash Script
+Orchestration: Bash Script (Development), with a roadmap to Apache Airflow
 
 CI/CD: GitHub Actions
 
 Containerization: Docker
 
-5. How to Run This Project
+4. How to Run This Project
 Prerequisites
 Git
 
 Python 3.10+
 
+Docker (Optional, for containerized execution)
+
 A Bash-compatible terminal (like Git Bash on Windows)
 
-Setup Instructions
+Local Execution
 Clone the repository:
 
 git clone [https://github.com/reevsreigner/network-fault-pipeline.git](https://github.com/reevsreigner/network-fault-pipeline.git)
@@ -69,57 +55,76 @@ cd network-fault-pipeline
 Create and activate a virtual environment:
 
 python -m venv .venv
-# On Windows (Git Bash)
-source .venv/Scripts/activate
-# On macOS/Linux
-source .venv/bin/activate
+source .venv/Scripts/activate # On Windows (Git Bash)
 
-Install the required dependencies:
+Install dependencies:
 
 pip install -r requirements.txt
 
-Running the Full Pipeline
-Execute the master orchestration script to run all stages from ingestion to model training:
+Run the full pipeline:
+This script handles ingestion, cleaning, database loading, and model training.
 
 bash run_pipeline.sh
 
-Launching the Dashboard
-After the pipeline has run successfully, start the interactive web application:
+Launch the Dashboard:
 
 streamlit run src/dashboard.py
 
-6. Project deep-dive
-Data Provenance & Realism
-The dataset is a real-world sample of mobile network KPIs collected over time. However, to create a supervised machine learning problem, the fault_flag target variable was synthetically generated. A fault is labeled based on a set of pre-defined business rules (e.g., Latency > 200ms AND Throughput < 1Mbps). This simulates a scenario where a data engineer must translate domain knowledge into a usable label for a predictive model.
+Containerized Execution (Using Docker)
+The Dockerfile packages the entire pipeline.
 
-Model Performance Analysis
-The Random Forest model achieved near-perfect metrics on the test set.
+Build the Docker image:
+From the project root, run:
+
+docker build -t network-pipeline .
+
+Run the pipeline inside the container:
+This command starts a container, runs the pipeline, and then the container will exit.
+
+docker run --name pipeline-run network-pipeline
+
+(Note: The database and model will be created inside the container and will not persist unless Docker Volumes are used).
+
+5. Engineering Deep-Dive & Decisions
+This section details the engineering choices made and the roadmap for production readiness.
+
+Model Metrics & Realism
+The Random Forest model achieved perfect metrics on the test set.
 
 Classification Report:
 
               precision    recall  f1-score   support
-
 No Fault (0)       1.00      1.00      1.00      3221
     Fault (1)       1.00      1.00      1.00       145
 
-     accuracy                           1.00      3366
-    macro avg       1.00      1.00      1.00      3366
- weighted avg       1.00      1.00      1.00      3366
+Analysis: The perfect score is a direct result of the rule-based fault_flag. The patterns were clean and distinct, making them easy for the model to learn. This serves as an excellent baseline.
 
-Confusion Matrix:
+Path to Realism: To simulate real-world messiness, the next step would be to inject noise into the data (e.g., slightly altering KPIs for fault cases) and retrain the model. This would test the model's robustness and likely require techniques like hyperparameter tuning or handling class imbalance with methods like SMOTE.
 
-[[3221    0]
- [   0  145]]
+Testing Strategy
+The project's testing maturity is established but has room to grow.
 
-Analysis: The exceptionally high scores are likely due to the clear, rule-based nature of the fault_flag label. The patterns were distinct enough for the model to learn them perfectly. In a real-world scenario with more noise and complex fault conditions, performance would likely be lower, requiring more advanced feature engineering and model tuning.
+Current State: Unit tests using pytest are implemented for the critical business logic in the transformation step (label_fault function). These tests are automatically run on every push via the GitHub Actions CI pipeline.
 
-Engineering Maturity & Future Improvements
-This project demonstrates several key engineering best practices but also has a clear roadmap for scaling:
+Future Roadmap: A production-grade testing suite would be expanded to include:
 
-Testing & CI/CD: Unit tests for critical logic are included and are automatically run via a GitHub Actions CI pipeline, ensuring code quality.
+Data Validation Tests: Using a library like Great Expectations to define schema constraints and data quality checks at the ingestion stage.
 
-Orchestration: The pipeline is currently orchestrated with a simple Bash script. The next step would be to migrate this logic to a production-grade orchestrator like Apache Airflow or Prefect.
+Integration Tests: Verifying that the different pipeline components (e.g., transformation script and database loading script) interact correctly.
 
-Scalability: While SQLite is excellent for development, a production deployment would require migrating the database to a more robust system like PostgreSQL or a cloud data warehouse like Google BigQuery to handle larger data volumes and concurrent user access.
+Orchestration: From Bash to Airflow
+The pipeline is currently orchestrated with a simple run_pipeline.sh script.
 
-Containerization: The included Dockerfile is the first step toward deployment. The next step is to use Docker Compose to manage the application and its database as interconnected services, preparing it for deployment on platforms like Kubernetes.
+Reasoning: This approach is lightweight and perfect for local development and demonstration. It clearly defines the sequence of operations without requiring heavy dependencies.
+
+Production Roadmap: For a production environment, this logic would be migrated to a dedicated workflow orchestrator like Apache Airflow. Each script (ingest.py, clean_transform.py, etc.) would become a task within an Airflow DAG (Directed Acyclic Graph), enabling robust scheduling, retries, and monitoring.
+
+Database Positioning: From SQLite to PostgreSQL
+The analytics database is currently SQLite.
+
+Reasoning: SQLite was chosen for its simplicity and portability. It is a serverless, file-based database, which means the entire project can be run without any external database setup, making it ideal for a portfolio piece.
+
+Production Roadmap: The data models and loading scripts are designed to be portable. In a production setting, the database connection would be pointed to a production-grade relational database like PostgreSQL or a cloud data warehouse like Google BigQuery to handle larger data volumes, concurrent access, and advanced analytics.
+
+Containerization Story
+The Dockerfile in this repository packages the entire ETL and training pipeline. When a container is run from this image, its default command (CMD) is to execute the run_pipeline.sh script, creating the curated data, database, and model inside the container's ephemeral filesystem. This demonstrates the portability of the entire application.
